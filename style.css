@@ -59,6 +59,21 @@ input[type="range"] {
   width: 120px;
 }
 
+button {
+  background: #7b5cff;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #6a4de0;
+}
+
 @media (max-width: 600px) {
   .container {
     padding: 1rem;
