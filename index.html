@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drawerz</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #draw-canvas {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Drawerz</h1>
+    <canvas id="draw-canvas" width="800" height="500"></canvas>
+    <div class="controls">
+      <label>Jiggle Intensity: <input type="range" id="jiggle-intensity" min="0" max="20" value="5"></label>
+      <label>Jiggle Speed: <input type="range" id="jiggle-speed" min="1" max="60" value="30"></label>
+      <button id="start-recording">Start</button>
+      <button id="stop-recording">S.</button>
+      <button id="export-button">Export</button>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html> 
