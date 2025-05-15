@@ -2,12 +2,14 @@ const canvas = document.getElementById('draw-canvas');
 const ctx = canvas.getContext('2d');
 const intensitySlider = document.getElementById('jiggle-intensity');
 const speedSlider = document.getElementById('jiggle-speed');
+const thicknessSlider = document.getElementById('thickness-intensity');
 
 let drawing = false;
 let currentStroke = [];
 let vectorStrokes = [];
 let jiggleIntensity = parseFloat(intensitySlider.value);
 let jiggleSpeed = parseFloat(speedSlider.value);
+let thicknessIntensity = parseFloat(thicknessSlider.value);
 
 //drawing logic
 
@@ -30,7 +32,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!drawing) return;
   drawing = false;
   if (currentStroke.length > 1) {
-    const vector = vectorizeStroke(currentStroke, 20 + Math.floor(currentStroke.length / 10));
+    const vector = vectorizeStroke(currentStroke);
     vectorStrokes.push({ points: vector, phase: Math.random() * 1000 });
   }
   currentStroke = [];
@@ -42,7 +44,7 @@ canvas.addEventListener('pointerleave', (e) => {
   if (drawing) {
     drawing = false;
     if (currentStroke.length > 1) {
-      const vector = vectorizeStroke(currentStroke, 20 + Math.floor(currentStroke.length / 10));
+      const vector = vectorizeStroke(currentStroke);
       vectorStrokes.push({ points: vector, phase: Math.random() * 1000 });
     }
     currentStroke = [];
@@ -58,10 +60,11 @@ function getCanvasPos(e) {
   };
 }
 
-
-function vectorizeStroke(stroke, numPoints) {
-  if (stroke.length <= numPoints) return stroke;
+function vectorizeStroke(stroke) {
   const totalLen = strokeLength(stroke);
+
+  const numPoints = Math.max(30, Math.min(300, Math.floor(totalLen / 5)));
+  if (stroke.length <= numPoints) return stroke;
   const segment = totalLen / (numPoints - 1);
   let resampled = [stroke[0]];
   let d = 0, i = 1, prev = stroke[0];
@@ -103,8 +106,9 @@ function dist(a, b) {
 
 // juggle
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Draw current stroke (pixel, smooth)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   if (currentStroke.length > 1) {
     ctx.save();
     ctx.strokeStyle = '#000000';
@@ -117,9 +121,12 @@ function draw() {
     ctx.stroke();
     ctx.restore();
   }
-  // Draw vectorized strokes (jiggly)
+
   for (let stroke of vectorStrokes) {
-    drawJigglyStroke(stroke);
+    drawRotationStroke(stroke);
+    if (thicknessIntensity > 0) {
+      drawThicknessStroke(stroke);
+    }
   }
 }
 
@@ -137,6 +144,45 @@ function drawJigglyStroke(stroke) {
     const dy = Math.sin(angle) * r;
     if (i === 0) ctx.moveTo(pt.x + dx, pt.y + dy);
     else ctx.lineTo(pt.x + dx, pt.y + dy);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRotationStroke(stroke) {
+  ctx.save();
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  let t = performance.now() / (1000 / jiggleSpeed) + stroke.phase;
+  for (let i = 0; i < stroke.points.length; i++) {
+    const pt = stroke.points[i];
+    const angle = t + i * 0.6;
+    const r = jiggleIntensity * (0.5 + 0.5 * Math.sin(angle * 1.3 + i));
+    const dx = Math.cos(angle) * r;
+    const dy = Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(pt.x + dx, pt.y + dy);
+    else ctx.lineTo(pt.x + dx, pt.y + dy);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawThicknessStroke(stroke) {
+  ctx.save();
+  ctx.strokeStyle = '#000000';
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  let t = performance.now() / (1000 / jiggleSpeed) + stroke.phase;
+  const thickness = 3 + thicknessIntensity * Math.sin(t);
+  ctx.lineWidth = thickness;
+  ctx.beginPath();
+  for (let i = 0; i < stroke.points.length; i++) {
+    const pt = stroke.points[i];
+    if (i === 0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
   }
   ctx.stroke();
   ctx.restore();
@@ -164,10 +210,11 @@ function exportToMP4() {
     URL.revokeObjectURL(url);
   };
   mediaRecorder.start();
-
   let frameCount = 0;
   const totalFrames = 150;
   const renderFrame = () => {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     draw();
     frameCount++;
     if (frameCount < totalFrames) {
@@ -176,11 +223,18 @@ function exportToMP4() {
       mediaRecorder.stop();
     }
   };
-  requestAnimationFrame(renderFrame);
+
+  setTimeout(() => {
+    requestAnimationFrame(renderFrame);
+  }, 100);
 }
 
+//controls
 intensitySlider.addEventListener('input', () => {
   jiggleIntensity = parseFloat(intensitySlider.value);
+});
+thicknessSlider.addEventListener('input', () => {
+  thicknessIntensity = parseFloat(thicknessSlider.value);
 });
 speedSlider.addEventListener('input', () => {
   jiggleSpeed = parseFloat(speedSlider.value);
